@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlindML</title>
+    <script src="./stylesheets/tailwind.css"></script>
+
+</head>
+<body class="bg-gray-100">
+
+<!-- 탑 네비게이션 바 포함 -->
+<%- include('partial/topnav') %>
+
+<!-- 왼쪽 네비게이션 메뉴 -->
+<div class="flex">
+
+    <%- include('partial/leftmenu') %>
+
+    <main class="flex-1 p-6">
+        <h1 class="text-2xl font-semibold mb-6 text-gray-800">Open Models</h1>
+        <!-- 메인 컨텐츠 영역 -->
+        <%- include('partial/main') %>
+    </main>
+
+
+</div>
+</body>
+</html>

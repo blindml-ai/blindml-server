@@ -1,0 +1,14 @@
+<!-- views/partials/topNav.ejs -->
+<nav class="flex justify-between items-center py-4 bg-blue-500 text-white">
+    <div class="ml-8 text-lg font-semibold">BlindML</div>
+    <div>
+        <% if (loggedIn) { %>
+            <span class="mr-4">Welcome, <%= nickname %></span>
+            <a href="/users/signout" class="mr-8">Sign Out</a>
+        <% } else { %>
+            <a href="/users/signin" class="mr-4">Sign In</a>
+            <a href="/users/register" class="mr-8">Sign Up</a>
+        <% } %>
+        <button class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded"><a href="/containers/create">Create New</a></button>
+    </div>
+</nav>

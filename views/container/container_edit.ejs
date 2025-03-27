@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Container</title>
+    <script src="/stylesheets/tailwind.css"></script>
+    <!-- SimpleMDE CSS -->
+    <link rel="stylesheet" href="/stylesheets/simplemde.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/theme/monokai.min.css">
+
+    <style>
+        #codeViewerModal .modal-content .CodeMirror {
+            text-align: left;
+            display: flex;
+            justify-content: flex-start;
+            z-index: 9999; /* z-index 설정 */
+        }
+        .CodeMirror {
+            height: auto;
+            min-height: 100px;
+            width: 100%;
+            z-index: 9999; /* z-index 설정 */
+        }
+
+    </style>
+
+    <style>
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .current {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .completed {
+            color: green; /* 완료된 단계 스타일 */
+        }
+        .failed {
+            color:red;
+        }
+
+    </style>
+
+
+</head>
+<body class="bg-gray-100 p-5">
+
+<div class="max-w-4xl mx-auto mb-2 mt-2">
+    <a onclick="window.history.back();" class="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium text-lg transition-colors duration-300 mb-2 " style="cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Go Back
+    </a>
+</div>
+
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+
+    <form id="containerForm" action="/containers/create" method="POST">
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                Container Name
+            </label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" name="name" type="text" placeholder="" required value="<%=container.name %>" readonly>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="desc">
+                Description (optional)
+            </label>
+            <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="desc" name="desc" rows="3" required readonly></textarea>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="resources">
+                Resources
+            </label>
+            <div class="flex mb-4 -mx-2">
+                <div class="w-1/2 px-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="cpu">
+                        CPU (Cores)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="cpu" name="cpu" type="number" min="1" placeholder="1" value="<%=container.cpu %>" required readonly>
+                </div>
+                <div class="w-1/2 px-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="ram">
+                        RAM (GB)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="ram" name="ram" type="number" min="1" placeholder="2" value="<%=container.ram %>" required readonly>
+                </div>
+            </div>
+
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" value="" class="sr-only peer" id="toggleGPU">
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" id="gpuStatusLabel">GPU Disabled</span>
+            </label>
+
+        </div>
+
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="securityLevel">
+                Security Level
+            </label>
+            <select class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="securityLevel" name="securityLevel">
+                <% securityLevels.forEach(function(level) { %>
+                    <option value="<%= level.id %>" <%= level.name === 'S1' ? 'selected' : '' %>><%= level.name %> - <span class="text-gray-500"><%= level.desc %></span></option>
+                <% }); %>
+            </select>
+        </div>
+
+
+        <!-- Whitelist and Blacklist Input Sections with Border -->
+        <div class="flex space-x-4 mb-4 ">
+            <!-- Whitelist Section -->
+            <div class="w-1/2">
+                <div class="">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="whitelist">
+                        Whitelist
+                    </label>
+                    <div class="flex mb-2">
+                        <!-- Whitelist 입력 필드 -->
+                        <div id="autocompleteContainer" class="relative w-full">
+                            <input id="whitelist" type="text" placeholder="Add nickname or email..." class="form-input shadow appearance-none border rounded-l w-full py-2 px-3 text-gray-700 leading-tight">
+                            <div id="whitelistSuggestions" class="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg"></div>
+                        </div>
+                    </div>
+                    <div id="whitelistTags" class="px-2 pt-2 pb-11 mb-3 flex flex-wrap rounded-lg bg-gray-200 dark:bg-gray-400"></div> <!-- Whitelist tags will be shown here -->
+                </div>
+            </div>
+
+            <!-- Blacklist Section -->
+            <div class="w-1/2">
+                <div class="">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="blacklist">
+                        Blacklist
+                    </label>
+                    <div class="flex mb-2">
+                        <div id="autocompleteContainer" class="relative w-full">
+                            <input id="blacklist" type="text" placeholder="Add nickname or email..." class="form-input shadow appearance-none border rounded-l w-full py-2 px-3 text-gray-700 leading-tight">
+                            <div id="blacklistSuggestions" class="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg"></div>
+                        </div>
+                    </div>
+                    <div id="blacklistTags" class="px-2 pt-2 pb-11 mb-3 flex flex-wrap rounded-lg bg-gray-200 dark:bg-gray-400"></div> <!-- Blacklist tags will be shown here -->
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="visibility">
+                Visibility
+            </label>
+            <select class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="visibility" name="visibility">
+                <option value="onlyme" selected>Only Me</option>
+                <option value="public">Public</option>
+            </select>
+            <p id="visibilityDescription" class="text-sm text-gray-600 mt-1">Only you can see this container.</p>
+        </div>
+
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="tagsInput">
+                Tags
+            </label>
+            <!-- 태그 입력 필드 -->
+            <input id="tagsInput" type="text" placeholder="Add tags..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2">
+            <!-- 입력된 태그들이 표시될 컨테이너 -->
+            <div id="tagsContainer" class="flex flex-wrap border-2 border-solid border-gray-300 rounded-lg p-2 px-2 pt-2 pb-11 mb-3 "></div>
+        </div>
+
+
+        <!-- Version -->
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="version">
+                Version
+            </label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="version" name="version" type="text" placeholder="1.0.0" value="<%=container.version%>">
+        </div>
+
+
+        <div class="mb-4">
+
+            <div class="mb-4 mt-8">
+                <hr class="my-4 border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-gray-700 text-xl font-bold">FHE Settings</h1>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">Skippable</span>
+                </div>
+            </div>
+
+
+            <div class="flex flex-wrap mb-4 mt-10">
+                <div class="flex-grow" style="flex-basis: 60%; margin-right: 1rem;">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="fheLib">Select FHE library</label>
+                    <select name="fheLib" id="fheLib" class="appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                        <option value="none">Enter Later</option>
+                        <option value="concrete-ml">Concrete-ML</option>
+                        <option value="pyheaan">pyHEAAN</option>
+                        <option value="helayers">HELayers</option>
+                    </select>
+                </div>
+                <div class="flex-grow" style="flex-basis: 35%;"> <!-- 너비 조정 -->
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="fheVersion">Choose the version</label>
+                    <select name="fheVersion" id="fheVersion" class="appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                        <!-- Version options will be dynamically populated -->
+                    </select>
+                </div>
+            </div>
+
+            <div id="fheSettingsSection" class="opacity-50 pointer-events-none">
+                <!-- Existing Drag n Drop area -->
+                <label class="block text-gray-700 text-sm font-bold mb-2 mt-10" for="fileUpload">
+                    Upload FHE Model Files
+                </label>
+                <p id="frameworkHelpText" class="text-sm text-gray-600 mt-1 mb-4">For concrete-ml, you must upload <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a></p>
+
+                <input id="fileUpload" type="file" multiple class="hidden" />
+                <div id="dropArea" class="border-2 border-dashed border-gray-400 rounded-lg text-center py-10 cursor-pointer">
+                    Drag and drop files here or click to select files
+                </div>
+                <ul id="fileList" class="list-disc mt-4 pl-5">
+                    <!-- Uploaded files will be listed here -->
+                </ul>
+
+
+                <!-- Drag & Drop for requirements.txt -->
+                <div class="mb-4 mt-10">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="requirementsUpload">Upload requirements.txt (for Python Environments)</label>
+                        <div id="requirementsDropArea" class="border-2 border-dashed border-gray-400 rounded-lg text-center py-10 cursor-pointer">
+                            Drag and drop requirements.txt here or click to select the file
+                        </div>
+                        <input id="requirementsUpload" type="file" class="hidden" accept=".txt">
+                    </div>
+                    <textarea id="requirementsEditor" ></textarea> <!-- Textarea for editing requirements.txt -->
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="flex items-center justify-between">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                Create Container
+            </button>
+        </div>
+
+
+    </form>
+</div>
+
+<!-- Code Viewer Modal -->
+<div id="codeViewerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-3/4 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Inference Code Viewer</h3>
+            <div class="mt-2">
+                <!--<textarea id="codeEditor"></textarea>-->
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeModal" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- 모달 -->
+<div id="alertModal" class="hidden fixed z-10 inset-0 overflow-y-auto" style="z-index:9999999">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <!-- 모달 컨텐츠 -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <!-- 아이콘 -->
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-headline">
+                            Error
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500" id="alertText">
+                                -
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button id="close-button" type="button" class="close-button mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" id="close-modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 모달 배경 -->
+<div id="processModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden" style="z-index:9999">
+    <!-- 모달 컨텐츠 -->
+    <div class="relative p-10 border max-w-3xl w-full shadow-lg rounded-md bg-white" style="z-index: 9999;">
+        <!-- 모달 헤더 -->
+        <div class="text-center">
+            <h3 id="fstep-title" class="text-xl leading-6 font-medium text-gray-900">Please wait a moment</h3>
+            <div class="mt-2 px-7 py-3">
+                <p id="fstep-subtitle" class="text-sm text-gray-500">Currently creating the FHE model</p>
+            </div>
+        </div>
+        <!-- 모달 바디: 진행 상황 단계 -->
+        <div class="flex items-center justify-center mt-4 space-x-4">
+            <div class="flex flex-col items-center" style="width: 150px;">
+                <div id="fstep200" class="fstep w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold current">1</div>
+                <span class="text-sm text-gray-700 mt-2 text-center">Building Docker Image</span>
+            </div>
+            <div class="flex flex-col items-center" style="width: 150px;">
+                <div id="fstep300" class="fstep w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">2</div>
+                <span class="text-sm text-gray-700 mt-2 text-center">Creating Container</span>
+            </div>
+            <div class="flex flex-col items-center" style="width: 150px;">
+                <div id="fstep500" class="fstep w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">3</div>
+                <span class="text-sm text-gray-700 mt-2 text-center">Completed</span>
+            </div>
+        </div>
+
+        <div class="mt-10  text-center">
+            <button type="button" id="confirmBtn" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-2 py-1 bg-blue-500 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm" style="width: auto; min-width: 100px;">
+                Close
+            </button>
+        </div>
+        <script>
+            document.getElementById('confirmBtn').addEventListener('click', function() {
+                document.getElementById('processModal').classList.add('hidden');
+            });
+        </script>
+    </div>
+</div>
+<div id="ErrorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden" style="z-index:9999">
+    <!-- 모달 컨텐츠 -->
+    <div class="relative p-10 border max-w-3xl w-full shadow-lg rounded-md bg-white" style="z-index: 9999;">
+        <!-- 모달 헤더 -->
+        <div class="text-center">
+            <h3 id="error-fstep-title" class="text-xl leading-6 font-medium text-gray-900 failed">Failed to deploy</h3>
+            <div class="mt-2 px-7 py-3">
+                <p id="error-fstep-subtitle" class="text-sm text-gray-500">Error occurred</p>
+            </div>
+        </div>
+        <!-- 모달 바디: 진행 상황 단계 -->
+        <div class="flex items-center justify-center mt-4 space-x-4 process-part">
+            <textarea id="error-fstep-message" class="text-sm text-gray-500 p-2" style="color:red; height: 100px; overflow-y: scroll; resize: none; width: 100%;" readonly>Error Messages</textarea>
+        </div>
+
+        <div class="mt-10  text-center">
+            <button type="button" id="ErrorConfirmBtn" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-2 py-1 bg-blue-500 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm" style="width: auto; min-width: 100px;">
+                Close
+            </button>
+        </div>
+        <script>
+            document.getElementById('ErrorConfirmBtn').addEventListener('click', function() {
+                document.getElementById('ErrorModal').classList.add('hidden');
+            });
+        </script>
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/mode/python/python.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 서버로부터 받은 화이트리스트와 블랙리스트 데이터를 가정한 예시입니다.
+        // 실제로는 서버로부터 받은 데이터를 사용해야 합니다.
+        var whitelistData = "<%= container.whitelist %>"; // 예: "email1@example.com;email2@example.com"
+        var blacklistData = "<%= container.blacklist %>"; // 예: "blocked1@example.com;blocked2@example.com"
+
+        // 화이트리스트와 블랙리스트 데이터를 배열로 변환합니다.
+        var whitelist = whitelistData.split(';');
+        var blacklist = blacklistData.split(';');
+
+        // 화이트리스트와 블랙리스트 태그를 페이지에 표시하는 함수입니다.
+        function displayList(list, containerId) {
+            var container = document.getElementById(containerId);
+            list.forEach(function(item) {
+                if (item) { // 빈 문자열이 아닌 경우에만 태그를 추가합니다.
+                    var tagElement = document.createElement('span');
+                    tagElement.className = 'inline-flex items-center bg-blue-100 px-3 py-1 m-1 rounded text-sm font-medium text-gray-700 mr-2';
+                    tagElement.textContent = item;
+
+                    var removeBtn = document.createElement('span');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.className = 'ml-2 cursor-pointer text-red-500';
+                    removeBtn.addEventListener('click', function() {
+                        tagElement.remove(); // 태그 제거
+                    });
+
+                    tagElement.appendChild(removeBtn);
+                    container.appendChild(tagElement);
+                }
+            });
+        }
+
+        // 화이트리스트와 블랙리스트 데이터를 각각의 컨테이너에 표시합니다.
+        displayList(whitelist, 'whitelistTags');
+        displayList(blacklist, 'blacklistTags');
+    });
+
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // GPU 상태 데이터를 EJS 템플릿에서 가져오는 예시 코드입니다.
+        // 실제로는 서버로부터 받은 GPU 상태 데이터를 사용해야 합니다.
+        var gpuEnabled = "<%= container.gpu_enabled %>"; // '1' 또는 '0'의 값을 가정
+
+        var gpuSwitch = document.getElementById('toggleGPU');
+        var gpuStatusLabel = document.getElementById('gpuStatusLabel');
+
+        // GPU 스위치 초기 상태 설정
+        if(gpuEnabled === '1') {
+            gpuSwitch.checked = true;
+            gpuStatusLabel.textContent = 'GPU Enabled';
+        } else {
+            gpuSwitch.checked = false;
+            gpuStatusLabel.textContent = 'GPU Disabled';
+        }
+
+        // GPU 스위치 변경 이벤트 리스너 추가
+        gpuSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                gpuStatusLabel.textContent = 'GPU Enabled';
+            } else {
+                gpuStatusLabel.textContent = 'GPU Disabled';
+            }
+        });
+    });
+
+</script>
+<Script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Assuming 'tags' is the variable containing the semicolon-separated tags string.
+        // This should be replaced with the actual way you're getting the tags string in EJS.
+        var tags = "<%= container.tags %>"; // This will get replaced with the actual tags from the server when rendered.
+
+        // Split the tags string by semicolons into an array of individual tags.
+        var tagList = tags.split(';');
+
+        // Reference to the container where the tags will be displayed.
+        var tagsContainer = document.getElementById('tagsContainer');
+
+        // Function to create a tag element.
+        function createTagElement(tagValue) {
+            var tagElement = document.createElement('span');
+            tagElement.className = 'inline-flex items-center bg-blue-100 px-3 py-1 m-1 rounded text-sm font-medium text-gray-700 mr-2';
+            tagElement.textContent = tagValue;
+
+            // Append a remove button for each tag.
+            var removeBtn = document.createElement('span');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.className = 'ml-2 cursor-pointer text-red-500';
+            removeBtn.addEventListener('click', function() {
+                tagElement.remove(); // Remove the tag element when the button is clicked.
+            });
+
+            tagElement.appendChild(removeBtn);
+            return tagElement;
+        }
+
+        // Loop through the tagList array and create a tag element for each tag.
+        tagList.forEach(function(tag) {
+            var tagElement = createTagElement(tag);
+            tagsContainer.appendChild(tagElement); // Append the tag element to the tags container.
+        });
+    });
+</Script>
+<!-- SimpleMDE JS -->
+<script src="/javascripts/simplemde.min.js"></script>
+<script>
+    var simplemde = new SimpleMDE({ element: document.getElementById("desc") });
+    document.getElementById("desc").required = false; // required 속성 제거
+
+    //requirements.txt
+    // CodeMirror for editing requirements.txt
+    var requirementsEditor = CodeMirror.fromTextArea(document.getElementById('requirementsEditor'), {
+        mode: "text",
+        lineNumbers: true
+    });
+
+</script>
+
+<script>
+    document.getElementById('visibility').addEventListener('change', function() {
+        var visibilityDescription = document.getElementById('visibilityDescription');
+        switch (this.value) {
+            case 'public':
+                visibilityDescription.textContent = 'Anyone can see this container.';
+                break;
+            case 'private':
+                visibilityDescription.textContent = 'Only people invited can see this container.';
+                break;
+            case 'onlyme':
+                visibilityDescription.textContent = 'Only you can see this container.';
+                break;
+            default:
+                visibilityDescription.textContent = 'Control who can see this container.';
+                break;
+        }
+    });
+</script>
+<script>
+    document.getElementById('toggleGPU').addEventListener('change', function() {
+        const label = document.getElementById('gpuStatusLabel');
+        if (this.checked) {
+            label.textContent = 'GPU Enabled'; // Update text to "GPU Enabled"
+        } else {
+            label.textContent = 'GPU Disabled'; // Update text to "GPU Disabled"
+        }
+    });
+</script>
+
+
+<script>
+    const whitelistTags = new Set(); // 화이트리스트 태그 저장을 위한 Set
+    const blacklistTags = new Set(); // 블랙리스트 태그 저장을 위한 Set
+    const contagsSet = new Set(); // 태그를 저장할 Set
+
+    document.addEventListener('DOMContentLoaded', function() {
+
+
+        const whitelistInput = document.getElementById('whitelist');
+        const whitelistSuggestions = document.getElementById('whitelistSuggestions');
+        const whitelistTagsContainer = document.getElementById('whitelistTags');
+
+        const blacklistInput = document.getElementById('blacklist');
+        const blacklistSuggestions = document.getElementById('blacklistSuggestions');
+        const blacklistTagsContainer = document.getElementById('blacklistTags');
+
+        const tagsInput = document.getElementById('tagsInput');
+        const contagsContainer = document.getElementById('tagsContainer');
+
+
+        // 제안 목록을 가져오고 표시하는 함수
+        async function fetchAndDisplaySuggestions(inputElement, suggestionsContainer, apiUrl) {
+            const query = inputElement.value.trim();
+            suggestionsContainer.innerHTML = '';
+            if (!query) return;
+
+            try {
+                const response = await fetch(`${apiUrl}?search=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                data.users.forEach(user => {
+                    const suggestionItem = document.createElement('div');
+                    const nickmail = user.nickname + " <" + user.email + ">";
+                    suggestionItem.textContent = nickmail;
+                    suggestionItem.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                    suggestionItem.addEventListener('click', () => {
+                        addTag(inputElement, nickmail, suggestionsContainer === whitelistSuggestions ? whitelistTags : blacklistTags,
+                            suggestionsContainer === whitelistSuggestions ? whitelistTagsContainer : blacklistTagsContainer);
+                    });
+                    suggestionsContainer.appendChild(suggestionItem);
+                });
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+            }
+        }
+
+        function extractEmail(nickmail) {
+            const emailMatch = nickmail.match(/<([^>]+)>/);
+            return emailMatch ? emailMatch[1] : null; // Returns only the email or null if not found
+        }
+
+        // 태그를 추가하는 함수
+        function addTag(inputElement, nickmail, tagsSet, tagsContainer) {
+            const email = extractEmail(nickmail);
+            if (!email || tagsSet.has(email)) {
+                return; // Do not add if email is null or already exists
+            }
+            tagsSet.add(email); // Add email to the set
+            const tag = document.createElement('span');
+            // 'h-24' 클래스 제거, 패딩과 폰트 사이즈로 태그 크기 조절
+            tag.className = 'flex flex-wrap pl-4 pr-2 py-2 m-1 justify-between items-center text-sm font-medium cursor-pointer bg-blue-100 text-gray-700 hover:bg-blue-200 hover:text-gray-800 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-gray-100';
+            tag.textContent = nickmail;
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = '×';
+            removeBtn.className = 'ml-2 cursor-pointer text-red-500';
+            removeBtn.onclick = () => {
+                tag.remove();
+                tagsSet.delete(email); // Set에서도 태그 삭제
+            };
+            tag.appendChild(removeBtn);
+            tagsContainer.appendChild(tag);
+            inputElement.value = ''; // 입력 필드 초기화
+            inputElement.focus(); // 입력 필드에 다시 포커스
+        }
+
+        whitelistInput.addEventListener('input', () => fetchAndDisplaySuggestions(whitelistInput, whitelistSuggestions, '/containers/getusers'));
+        blacklistInput.addEventListener('input', () => fetchAndDisplaySuggestions(blacklistInput, blacklistSuggestions, '/containers/getusers'));
+
+        // 엔터 키 이벤트 처리
+        [whitelistInput, blacklistInput].forEach(inputElement => {
+            inputElement.addEventListener('keydown', (event) => {
+                const suggestionsContainer = inputElement === whitelistInput ? whitelistSuggestions : blacklistSuggestions;
+                const tagsSet = inputElement === whitelistInput ? whitelistTags : blacklistTags;
+                const tagsContainer = inputElement === whitelistInput ? whitelistTagsContainer : blacklistTagsContainer;
+
+                if (event.key === 'Enter' && suggestionsContainer.firstChild) {
+                    event.preventDefault(); // 폼 제출 방지
+                    addTag(inputElement, suggestionsContainer.firstChild.textContent, tagsSet, tagsContainer);
+                    suggestionsContainer.innerHTML = ''; // 제안 목록 초기화
+                }
+            });
+        });
+
+
+        // 태그 엘리먼트를 생성하고 추가하는 함수
+        function createTagElement(value) {
+            // 태그가 이미 존재하거나 태그의 개수가 10개 이상이면 추가하지 않음
+            if (contagsSet.has(value) || contagsSet.size >= 10) {
+                alert("You can add up to a maximum of 10 tags.");
+                return;
+            }
+
+            contagsSet.add(value); // 새로운 태그 값을 Set에 추가
+
+            const tag = document.createElement('span');
+            tag.className = 'inline-flex items-center bg-blue-100 px-3 py-1 m-1 rounded text-sm font-medium text-gray-700 mr-2';
+            tag.textContent = value;
+
+            const removeBtn = document.createElement('span');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.className = 'ml-2 cursor-pointer text-red-500';
+            removeBtn.addEventListener('click', function() {
+                tag.remove(); // DOM에서 태그 엘리먼트 제거
+                contagsSet.delete(value); // Set에서 태그 값 제거
+            });
+
+            tag.appendChild(removeBtn);
+            contagsContainer.appendChild(tag); // 태그 컨테이너에 새 태그 추가
+        }
+
+        // 태그 추가를 위한 이벤트 리스너
+        tagsInput.addEventListener('keydown', function(event) {
+            // 엔터 키가 눌리고 입력 값이 비어있지 않을 때 처리
+            if (event.key === 'Enter' && this.value.trim() !== '') {
+                event.preventDefault(); // 폼 제출 등 엔터 키의 기본 동작 방지
+                createTagElement(this.value.trim());
+                this.value = ''; // 태그 추가 후 입력 필드 초기화
+            }
+        });
+    });
+
+
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        var codeMirrors = document.getElementsByClassName('CodeMirror');
+        if (codeMirrors.length > 1) { // 두 번째 CodeMirror 인스턴스가 존재하는지 확인
+            var cmInstance = codeMirrors[1];
+            cmInstance.style.textAlign = "left";
+            cmInstance.style.height = "500px";
+            cmInstance.style.fontSize = "16px";
+        }
+
+        // 초기 내용 설정
+        requirementsEditor.setValue(`numpy==1.23.5,
+scikit-learn==1.1.3,
+xgboost==1.6.2,
+concrete-ml==1.4.0`);});
+
+
+    // Drag & Drop for requirements.txt
+    const requirementsDropArea = document.getElementById('requirementsDropArea');
+    const requirementsUpload = document.getElementById('requirementsUpload');
+    requirementsDropArea.addEventListener('click', () => requirementsUpload.click());
+
+    ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+        requirementsDropArea.addEventListener(eventName, (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            requirementsDropArea.classList.toggle('bg-gray-300', eventName === 'dragover');
+        });
+    });
+
+    requirementsDropArea.addEventListener('drop', (event) => {
+        let file = event.dataTransfer.files[0]; // Assume single file
+        processRequirementsFileUpload(file);
+    });
+
+    requirementsUpload.addEventListener('change', () => {
+        let file = requirementsUpload.files[0]; // Assume single file
+        processRequirementsFileUpload(file);
+    });
+
+    function processRequirementsFileUpload(file) {
+        if (file && file.type === 'text/plain') {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                requirementsEditor.setValue(e.target.result);
+            };
+            reader.readAsText(file);
+            // Update UI to reflect the uploaded file
+            requirementsDropArea.textContent = file.name + " uploaded";
+        } else {
+            alert("Please upload a valid requirements.txt file.");
+        }
+    }
+
+    //main
+
+    var modal = document.getElementById('alertModal');
+    var span = document.getElementsByClassName("close-button")[0];
+    var alertText = document.getElementById('alertText'); // 경고 텍스트 엘리먼트
+
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+
+    //model upload
+    var form = document.getElementById('containerForm');
+    const dropArea = document.getElementById('dropArea');
+    const fileList = document.getElementById('fileList');
+    const fileInput = document.getElementById('fileUpload');
+    const fheLibSelect = document.getElementById('fheLib');
+    var uploadedFiles = {};
+    function handleFiles(files) {
+
+        const isConcreteMl = fheLibSelect.value === 'concrete-ml';
+        if(isConcreteMl) {
+            const validFiles = ['client.zip', 'server.zip'];
+            Array.from(files).forEach(file => {
+                // concrete-ml 선택 시 유효한 파일인지 검사
+                if (isConcreteMl && !validFiles.includes(file.name)) {
+                    alert(`${file.name} is not a valid file for concrete-ml.`);
+                } else {
+                    uploadedFiles[file.name] = file; // 파일 객체에 저장
+                }
+            });
+
+            updateFileList(); // 파일 리스트 업데이트
+        } else {
+            Array.from(files).forEach(file => {
+                uploadedFiles[file.name] = file;
+            });
+            updateFileList();
+        }
+    }
+
+    function updateFileList() {
+        fileList.innerHTML = ''; // 파일 리스트 초기화
+        Object.keys(uploadedFiles).forEach((fileName) => {
+            const file = uploadedFiles[fileName];
+            const listItem = document.createElement('li');
+            listItem.textContent = `${file.name} - ${formatBytes(file.size)} `;
+
+            // 파일 삭제 버튼 생성
+            const removeButton = document.createElement('button');
+            removeButton.textContent = ' x';
+            removeButton.style.color = 'red';
+            removeButton.style.cursor = 'pointer';
+            removeButton.onclick = function() {
+                delete uploadedFiles[file.name]; // 파일 객체에서 삭제
+                updateFileList(); // 파일 리스트 업데이트
+            };
+
+            listItem.appendChild(removeButton);
+            fileList.appendChild(listItem);
+        });
+    }
+
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            if (eventName === 'dragover') {
+                dropArea.classList.add('bg-gray-300');
+            } else if (eventName === 'dragleave') {
+                dropArea.classList.remove('bg-gray-300');
+            }
+        });
+    });
+
+    dropArea.addEventListener('drop', (event) => {
+        let files = event.dataTransfer.files;
+        handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', () => {
+        handleFiles(fileInput.files);
+    });
+
+
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        document.getElementById('processModal').classList.remove('hidden');
+
+        const fileInput = document.getElementById('fileUpload');
+        const fheLib = document.getElementById('fheLib');
+        const fheVersion = document.getElementById('fheVersion');
+        const name = document.getElementById('name');
+        const cpu = document.getElementById('cpu');
+        const ram = document.getElementById('ram');
+        const toggleGPU = document.getElementById('toggleGPU');
+        const securityLevel = document.getElementById('securityLevel');
+        const visibility = document.getElementById('visibility');
+        const whitelistData = Array.from(whitelistTags).join(';');
+        const blacklistData = Array.from(blacklistTags).join(';');
+        const tagsData = Array.from(contagsSet).join(';');
+        const versionData = document.getElementById('version').value;
+
+        // 필요한 파일이 업로드되었는지 확인
+        if (fheLib.value == 'concrete-ml') {
+            const files = Array.from(fileInput.files).map(file => file.name);
+            const requiredFiles = ['client.zip', 'server.zip'];
+            const allFilesUploaded = requiredFiles.every(file => files.includes(file));
+
+            if (!allFilesUploaded) {
+                alertText.innerHTML = `For concrete-ml, you must upload <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a>`;
+                modal.style.display = "block";
+                return;
+            }
+        }
+
+        // FormData를 사용하여 파일 및 다른 데이터를 추가
+        const formData = new FormData();
+        formData.append('name', name.value);
+        formData.append('desc', simplemde.value());
+        formData.append('cpu', cpu.value);
+        formData.append('ram', ram.value);
+        formData.append('gpuEnabled', toggleGPU.checked ? '1' : '0');
+        formData.append('securityLevel', securityLevel.value);
+        formData.append('visibility', visibility.value);
+        formData.append('fheLib', fheLib.value);
+        formData.append('fheVersion', fheVersion.value);
+        formData.append('requirements', requirementsEditor.getValue());
+        formData.append('whitelist', whitelistData);
+        formData.append('blacklist', blacklistData);
+        formData.append('tags', tagsData);
+        formData.append('version', versionData);
+
+        // 파일을 FormData에 추가
+        Array.from(fileInput.files).forEach(file => {
+            formData.append('modelFiles', file);
+        });
+
+        try {
+            const response = await fetch('/containers/create', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            console.log('Container is saved:', data);
+
+            if (!data.success) {
+                alert(data.message);
+                throw new Error('Network response was not ok');
+            } else {
+                if (Object.keys(uploadedFiles).length > 0) {
+                    startCheckingStatus(data.container_id);
+                } else {
+                    document.getElementById('processModal').classList.add('hidden');
+                    window.location.href = "/";
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error creating container.');
+        }
+    });
+
+    var checkInterval;
+
+    function startCheckingStatus(container_id) {
+        // 기존에 설정된 인터벌이 있으면 중단
+        if (checkInterval) {
+            clearInterval(checkInterval);
+        }
+
+        checkInterval = setInterval(function() { checkCreationStatus(container_id); }, 5000);
+    }
+
+    function checkCreationStatus(container_id) {
+        document.getElementById('processModal').classList.remove('hidden');
+
+        fetch('/containers/status', {
+            method: 'POST', // HTTP 메소드를 POST로 설정
+            headers: {
+                'Content-Type': 'application/json', // 컨텐츠 타입을 JSON으로 명시
+            },
+            body: JSON.stringify({ container_id: container_id }) // `container_id`를 JSON 문자열로 변환하여 body에 포함
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+
+                const status_code = data.code; // 현재 단계 상태
+                const error_log = data.error_log
+
+                // 모든 단계 초기화
+                document.querySelectorAll('.fstep').forEach(step => {
+                    step.classList.remove('current', 'completed');
+                });
+
+                // 에러 처리
+                if(status_code < 0) {
+                    const cleanedMessage = (error_log.message).replace(/\x1B\[\d+m/g, "");
+                    document.getElementById('ErrorModal').classList.remove('hidden');
+                    document.getElementById('processModal').classList.add('hidden');
+                    document.getElementById('error-fstep-title').innerText = "Failed to deploy";
+                    document.getElementById('error-fstep-subtitle').innerText = data.description + "(code:" + status_code + ")"
+                    document.getElementById('error-fstep-message').innerText = cleanedMessage;
+                    document.getElementById('error-fstep-message').classList.add('failed')
+                    clearInterval(checkInterval); // 폴링 중단
+                    return;
+                }
+
+                // 현재 단계 및 이전 단계들에 클래스 추가
+                for (let i = 0; i <= status_code; i += 10) {
+                    try {
+                        const fstep = document.getElementById(`fstep${i}`);
+                        if (i < status_code) {
+                            fstep.classList.remove('bg-blue-500')
+                            fstep.classList.add('bg-gray-500')
+                            fstep.classList.add('completed'); // 이전 단계들 완료 상태로 표시
+                        } else {
+                            fstep.classList.remove('bg-gray-300')
+                            fstep.classList.add('bg-blue-500')
+                            fstep.classList.add('current'); // 현재 단계 진행 중 상태로 표시
+                        }
+                    } catch(e) {
+                        // 오류 처리
+                    }
+                }
+
+                document.getElementById('confirmBtn').addEventListener('click', () => {
+                    clearInterval(checkInterval); // Interval 정지
+                    console.log("Interval has been cleared.");
+                });
+
+                // 모든 단계 완료 시 폴링 중단
+                if (status_code === 500) {
+                    console.log("All steps completed.");
+                    document.getElementById('fstep-title').innerText = "All steps completed.";
+                    document.getElementById('fstep-subtitle').innerText = "Redirecting to dashboard...";
+                    clearInterval(checkInterval); // 폴링 중단
+                    window.location.href = "/";
+                }
+            })
+            .catch(error => {
+                console.log('Error fetching data: ', error);
+                alert('Error fetching data: ', error);
+                clearInterval(checkInterval); // 폴링 중단
+            });
+    }
+
+
+    function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+</script>
+<script>
+    // Script for updating the help text based on FHE framework selection
+    document.getElementById('fheLib').addEventListener('change', function() {
+        var helpText = document.getElementById('frameworkHelpText');
+        if (this.value === 'concrete-ml') {
+            helpText.innerHTML = 'For concrete-ml,you must upload  <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a>';
+        } else {
+            helpText.innerHTML = ''; // Reset or provide alternative instructions for other selections
+        }
+    });
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var versions = {
+            'concrete-ml': ['1.4.0'],
+            'pyheaan': ['1.0.0']
+        };
+
+        // 초기 버전 옵션 설정
+        function initializeVersionOptions() {
+            var versionSelect = document.getElementById('fheVersion');
+            // concrete-ml 버전 옵션 추가
+            var selectedLibrary = 'concrete-ml'; // 기본으로 선택된 라이브러리
+            var libraryVersions = versions[selectedLibrary];
+
+            libraryVersions.forEach(function(version) {
+                var option = new Option(version, version);
+                versionSelect.add(option);
+                if(version === 'latest') {
+                    option.selected = true; // latest를 기본 선택으로 설정
+                }
+            });
+        }
+
+        // 라이브러리 선택 변경 시 버전 옵션 업데이트
+        document.getElementById('fheLib').addEventListener('change', function() {
+            var versionSelect = document.getElementById('fheVersion');
+            versionSelect.innerHTML = ''; // 기존 옵션 초기화
+
+
+
+            const fheSettingsSection = document.getElementById('fheSettingsSection');
+
+            // "none"이 선택되었을 경우 섹션을 비활성화
+            if (this.value === 'none') {
+                fheSettingsSection.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                // 그 외의 경우 섹션을 활성화
+                fheSettingsSection.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            var libraryVersions = versions[this.value];
+
+            libraryVersions.forEach(function(version) {
+                var option = new Option(version, version);
+                versionSelect.add(option);
+            });
+
+
+
+        });
+
+
+
+        // 서버로부터 받은 FHE 라이브러리와 버전 정보 (가정)
+        var selectedFheLib = "<%= container.fhe_lib %>"; // 예: 'concrete-ml'
+        var selectedFheVersion = "<%= container.fhe_lib_version %>"; // 예: '1.0'
+
+        var fheLibSelect = document.getElementById('fheLib');
+        var fheVersionSelect = document.getElementById('fheVersion');
+
+        // FHE 라이브러리 선택에 따라 버전 옵션 업데이트
+        function updateVersionOptions(lib) {
+
+            var selectedVersions = versions[lib] || [];
+            fheVersionSelect.innerHTML = ''; // 기존 옵션 초기화
+            selectedVersions.forEach(function(version) {
+                var option = new Option(version, version);
+                fheVersionSelect.add(option);
+                if(version === selectedFheVersion) {
+                    option.selected = true;
+                }
+            });
+        }
+
+        // 초기 라이브러리 및 버전 선택 상태 설정
+        if(fheLibSelect.options.namedItem(selectedFheLib)) {
+            fheLibSelect.value = selectedFheLib;
+        }
+        updateVersionOptions(selectedFheLib);
+
+
+        // 페이지 로드 시 버전 옵션 초기화
+        //initializeVersionOptions();
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 서버로부터 받은 FHE 모델 파일 정보 (가정)
+        var uploadedFheModels = <%- container.model_data.files %>
+        console.log(uploadedFheModels)
+
+        var modelFilesContainer = document.getElementById('fileList'); // 파일 목록을 표시할 컨테이너
+
+        // 업로드된 FHE 모델 파일을 페이지에 표시
+        function displayUploadedFheModels(models) {
+            Object.keys(models).forEach(function(fileName) {
+                var listItem = document.createElement('li');
+                listItem.textContent = fileName; // 파일명 표시
+                modelFilesContainer.appendChild(listItem);
+            });
+        }
+
+        displayUploadedFheModels(uploadedFheModels);
+    });
+
+</script>
+
+
+
+
+
+</body>
+</html>

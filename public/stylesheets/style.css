@@ -1,0 +1,105 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+body {
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 300px;
+  margin: auto;
+  margin-top: 50px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+a {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+}
+
+
+.top-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 50px;
+  background-color: #f5f5f5;
+}
+
+.logo a, .nav-links a, .create-new a {
+  text-decoration: none;
+  color: #333;
+  margin: 0 10px;
+}
+
+.create-new a {
+  padding: 5px 15px;
+  background-color: #007bff;
+  color: #fff;
+  border-radius: 5px;
+}
+
+.left-nav {
+  width: 200px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.main-menu, .sub-menu {
+  list-style: none;
+  padding: 0;
+}
+
+.main-content {
+  margin-left: 200px;
+  padding: 20px;
+}
+
+.server-rooms {
+  display: flex;
+  justify-content: space-between;
+}
+
+.room {
+  width: 30%;
+  background-color: #eee;
+  padding: 20px;
+  margin-top: 20px;
+}

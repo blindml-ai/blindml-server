@@ -1,0 +1,56 @@
+<!-- 왼쪽 네비게이션 메뉴 수정 -->
+<div class="sm:hidden bg-gray-800 text-white p-4 flex justify-between items-center">
+    <button id="menuToggle" class="text-white focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        </svg>
+    </button>
+</div>
+
+<aside id="mobileNav" class="hidden sm:block sm:w-64 bg-gray-800 text-white min-h-screen">
+    <ul class="space-y-2 p-2">
+        <li>
+            <a href="/" class="block p-2 hover:bg-gray-700">My FHE Models</a>
+        </li>
+        <li>
+            <a href="/openmodels" class="block p-2 hover:bg-gray-700">Open Models</a>
+        </li>
+        <li>
+            <a href="/settings/general" class="block p-2 hover:bg-gray-700">Settings</a>
+        </li>
+
+        <!-- My Account 메뉴와 하위 메뉴 -->
+        <li class="relative">
+            <button id="myAccountToggle" class="w-full text-left p-2 hover:bg-gray-700 flex justify-between items-center">
+                My Account
+                <svg class="w-4 h-4 transition-transform transform" id="myAccountArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <ul id="myAccountMenu" class="hidden space-y-2 pl-4 mt-2">
+
+                <li>
+                    <a href="/users/myapi" class="block p-2 hover:bg-gray-700">API</a>
+                </li>
+
+            </ul>
+        </li>
+    </ul>
+</aside>
+
+<!-- 모바일 메뉴 토글 스크립트 -->
+<script>
+    document.getElementById('menuToggle').addEventListener('click', function() {
+        const mobileNav = document.getElementById('mobileNav');
+        mobileNav.classList.toggle('hidden');
+    });
+
+    // My Account 하위 메뉴 토글
+    document.getElementById('myAccountToggle').addEventListener('click', function() {
+        const myAccountMenu = document.getElementById('myAccountMenu');
+        const myAccountArrow = document.getElementById('myAccountArrow');
+
+        myAccountMenu.classList.toggle('hidden');
+        myAccountArrow.classList.toggle('rotate-180');
+    });
+</script>

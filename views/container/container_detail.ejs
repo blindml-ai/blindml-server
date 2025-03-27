@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <!-- GitHub 스타일 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+
+</head>
+<body class="bg-gray-100">
+
+
+<!-- 탑 네비게이션 바 -->
+<%- include('../partial/topnav') %>
+
+<!-- 왼쪽 네비게이션 메뉴 -->
+<div class="flex">
+    <%- include('../partial/leftmenu') %>
+
+
+<div class="flex-1 max-w-4xl mx-auto mt-10">
+    <div class="max-w-4xl mx-auto  mt-2">
+        <a href="/" class="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium text-lg transition-colors duration-300 mb-2 " style="cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Go Back
+        </a>
+    </div>
+    <% if(user_id == container.owner) { %>
+        <div class="flex justify-between items-center p-2 py-5 border-b border-t">
+            <span>👤 This is my container</span>
+        </div>
+
+    <%} %>
+    <div class="flex justify-between items-center p-2 py-5 border-b">
+
+
+
+        <div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">ℹ Container Information</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">Details of the selected container.</p>
+        </div>
+        <% if( user_id == -1) { %>
+            <button class="text-white bg-white-300 text-blue-600 hover:bg-white-600 focus:ring-4 focus:ring-white-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:bg-white-600 dark:hover:bg-white-700 dark:focus:ring-white-800" type="button">
+                <a href="/users/signin">Sign In to Subscribe</a>
+            </button>
+        <% } %>
+
+        <% if(user_id != -1) { %>
+            <% if (container.owner != user_id) { %>
+
+        <div class="flex justify-end items-center">
+
+                        <!-- Subscribe Button -->
+                        <button id="subscribeButton" class="bg-blue-500 hover:bg-blue-700 text-white font-medium rounded-lg text-sm px-5 py-2.5 flex items-center mr-2" data-container-id="<%= container.id %>" data-is-subscribed="<%= container.is_user_container_linked ? 'true' : 'false' %>" type="button">
+                            <% if(container.is_user_container_linked) { %>
+                                    <span class="text-white rounded-full px-3 py-1 text-xs font-semibold">✓</span>
+                                    <span id="subscribeText" class="text-white rounded-full px-3 py-1 text-xs font-semibold">Subscribed</span>
+                                <% } else { %>
+                                    <span id="subscribeText" class="ml-2">Subscribe</span>
+                                    <span id="subscriberCount" class="text-white rounded-full px-3 py-1 text-xs font-semibold">🔔 <%= container.subscribers_count %></span>
+                                <% } %>
+                        </button>
+
+
+        </div>
+
+        <% } else { %>
+                <!-- 내 컨테이너일때 -->
+        <div class="flex justify-end items-center">
+                    <span class="text-black rounded-full px-3 py-1 text-xs font-semibold"><%= container.subscribers_count %> Subscribers</span>
+        </div>
+            <% } %>
+        <% } %>
+    </div>
+
+    <div id="overlay" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-center">
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+        <div class="px-4 py-5 sm:p-0">
+            <dl class="sm:divide-y sm:divide-gray-200">
+                <div class="bg-white px-4 py-5 flex justify-between items-center">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 mb-2">Status</dt>
+                        <dd class="mt-1 text-md text-gray-900 col-span-2">
+                            <div class="flex items-center">
+                                <div class="<%=
+                                container.status_code === 500 ? 'bg-green-700' :
+                                        container.status_code === 400 ? 'bg-yellow-500' :
+                                                container.status_code === 300 ? 'bg-blue-500' :
+                                                        container.status_code === 310 ? 'bg-blue-600' :
+                                                                container.status_code === 200 ? 'bg-blue-300' :
+                                                                        container.status_code === 210 ? 'bg-blue-400' :
+                                                                                container.status_code === 0 ? 'bg-blue-500' :
+                                                                                        'bg-red-500' %> rounded-full h-3 w-3 mr-2"></div>
+                                <span class="text-sm font-semibold"><%=
+                                    container.status_code === -100 ? 'NO DOCKER' :
+                                            container.status_code === 0 ? 'READY' :
+                                                    container.status_code === 200 ? 'BUILDING IMAGE' :
+                                                            container.status_code === 210 ? 'BUILD IMAGE FINISH' :
+                                                                    container.status_code === -200 ? 'BUILD IMAGE ERROR' :
+                                                                            container.status_code === 300 ? 'CREATING CONTAINER' :
+                                                                                    container.status_code === 310 ? 'CREATE CONTAINER FINISH' :
+                                                                                            container.status_code === -300 ? 'CREATE CONTAINER ERROR' :
+                                                                                                    container.status_code === 500 ? 'RUNNING' :
+                                                                                                            container.status_code === 400 ? 'STOPPED' :
+                                                                                                                    'RUNNING ERROR' %></span>
+                            </div>
+                        </dd>
+                    </div>
+
+                    <% if (container.owner == user_id) { %>
+                    <!-- Action Buttons -->
+                    <div class="flex items-center">
+                        <button onclick="performAction('start', `<%=container.id%>`)" class="mx-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-blue-500 hover:text-white">Start</button>
+                        <button onclick="performAction('restart', `<%=container.id%>`)" class="mx-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-yellow-500 hover:text-white">Restart</button>
+                        <button onclick="performAction('stop', `<%=container.id%>`)" class="mx-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-red-500 hover:text-white">Stop</button>
+                    </div>
+
+                    <% } %>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+
+        <div class="px-4 py-5 sm:p-0">
+            <dl class="sm:divide-y sm:divide-gray-200">
+                <!-- Container Name -->
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Container Name</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%= container.name %></dd>
+                </div>
+
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Owner</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><a href="/users/id=<%=container.owner%>"><%= container.nickname %> (<%=container.email%>)</a></dd>
+                </div>
+                <!-- Description rendered as HTML -->
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Description</dt>
+                    <dd class="mt-1 text-md text-gray-900">
+                        <div id="description-container" class="markdown-body"><%= container.desc %></div>
+                    </dd>
+                </div>
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Tags</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.tags%></dd>
+                </div>
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Last modification time</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.update_time%></dd>
+                </div>
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Creation time</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.insert_time%></dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mt-4">
+
+        <div class="px-4 py-5 sm:p-0">
+            <dl class="sm:divide-y sm:divide-gray-200">
+                <!-- Container Name -->
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Version</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.version %></dd>
+                </div>
+
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Security Level</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.security %></dd>
+                </div>
+                <!-- Description rendered as HTML -->
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Visibility</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.visibility %></dd>
+                </div>
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">FHE Library</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.fhe_lib %></dd>
+                </div>
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">FHE Library Version</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2"><%=container.fhe_lib_version %></dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+
+
+
+
+    <div class="max-w-4xl mx-auto mt-4">
+
+        <div id="accordion">
+            <!-- Endpoint Section -->
+            <h2 id="accordion-collapse-heading-1" class="mb-4">
+                <button type="button" class="accordion-toggle focus:outline-none flex items-center justify-between w-full p-2 font-medium text-left text-gray-900" aria-expanded="true" data-accordion-target="#accordion-collapse-body-1">
+            <span class="text-lg leading-6 font-medium text-gray-900">🔗 Endpoint
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Please use in the following link</p>
+            </span>
+                    <svg data-accordion-icon class="w-6 h-6 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </h2>
+            <div id="accordion-collapse-body-1" class="mb-4">
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:p-0">
+                        <dl class="sm:divide-y sm:divide-gray-200">
+                            <!-- Container Name -->
+                            <div class="bg-white px-4 py-5">
+                                <dt class="text-sm font-medium text-gray-500 mb-2">Server URL</dt>
+                                <dd class="mt-1 text-md text-gray-900 col-span-2"><%=endpoint%></dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Codes Section -->
+            <h2 id="accordion-collapse-heading-2">
+                <button type="button" class="mb-4 accordion-toggle focus:outline-none flex items-center justify-between w-full p-2 font-medium text-left text-gray-900 border-gray-200" aria-expanded="false" data-accordion-target="#accordion-collapse-body-2">
+                    <span class="text-lg leading-6 font-medium text-gray-900">📄 Sample Codes <p class="mt-1 max-w-2xl text-sm text-gray-500">Try sample codes</p></span>
+                    <svg data-accordion-icon class="w-6 h-6 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </h2>
+            <div id="accordion-collapse-body-2" class="hidden mb-4">
+                <div id="tabs" class="bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+                    <!-- Tabs -->
+                    <ul class="flex border-b">
+                        <li class="tab-item px-6 py-3 text-gray-600" role="tab" data-target="#python" style="cursor:pointer;">Python</li>
+                    </ul>
+
+                    <!-- Tab Contents -->
+                    <div id="tab-content">
+
+                        </div>
+                        <div id="python" class="hidden" role="tabpanel">
+            <pre><code class="python">
+# Import the BlindML library
+import blindml
+
+# Server URL and API Key for the BlindML service
+SERVER_URL = "<%= endpoint %>"
+API_KEY = "YOUR_API_KEY"
+
+# Initialize the BlindML client
+bm = blindml()
+bm.init(server_url=SERVER_URL, api_key=API_KEY)
+
+# Example input data
+# Replace this with your actual data. For demonstration, we use a numeric array.
+input_data = [1.5, 2.3, 3.7]  # Input data to be encrypted
+
+# Encrypt the input data
+encrypted_input = bm.encrypt(input_data)
+
+# Predict using the encrypted input data
+encrypted_prediction = bm.predict(encrypted_input)
+
+# Decode the encrypted prediction to obtain the final result
+prediction = bm.decrypt(encrypted_prediction)
+
+# Print the final prediction result
+print("Prediction result:", prediction)
+</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <!-- This section can be conditionally rendered server-side -->
+
+            <% if (container.owner == user_id) { %>
+            <h2 id="accordion-collapse-heading-3 mb-4">
+                <button type="button" class="mb-4 accordion-toggle focus:outline-none flex items-center justify-between w-full p-2 font-medium text-left text-gray-900 border-gray-200" aria-expanded="false" data-accordion-target="#accordion-collapse-body-3">
+                    <span class="text-lg leading-6 font-medium text-gray-900 ">⚙ Settings <p class="mt-1 max-w-2xl text-sm text-gray-500">Change this container settings</p></span>
+
+                    <svg data-accordion-icon class="w-6 h-6 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </h2>
+            <div id="accordion-collapse-body-3" class="hidden mb-10">
+                <div class="px-4 py-5 sm:p-0">
+                    <div class="space-y-4 p-5 bg-white shadow rounded-lg">
+                        <!-- Restart Container -->
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Restart Container</h3>
+                                <p class="text-sm text-gray-600">Restarts the container</p>
+                            </div>
+                            <button class="bg-gray-300 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                                Restart
+                            </button>
+                        </div>
+
+                        <!-- Stop Container -->
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Stop Container</h3>
+                                <p class="text-sm text-gray-600">Stops the container safely.</p>
+                            </div>
+                            <button class="bg-gray-300 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                                Stop
+                            </button>
+                        </div>
+
+                        <!-- Start Container -->
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Start Container</h3>
+                                <p class="text-sm text-gray-600">Starts the container from a stopped state.</p>
+                            </div>
+                            <button class="bg-gray-300 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                                Start
+                            </button>
+                        </div>
+
+                        <!-- Edit Configuration -->
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Edit</h3>
+                                <p class="text-sm text-gray-600">Edit the container settings and configuration.</p>
+                            </div>
+                            <button class="bg-gray-300 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                                <a href="/containers/edit/id=<%=container.id%>">Edit</a>
+                            </button>
+                        </div>
+
+                        <!-- Delete Container -->
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Delete</h3>
+                                <p class="text-sm text-gray-600">Permanently delete the container.</p>
+                            </div>
+                            <button id="deleteBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                                    Delete
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <% } %>
+        </div>
+    </div>
+
+
+</div>
+
+<!-- 확인 모달 -->
+<!-- Success Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <!-- Modal content -->
+    <div class="bg-white rounded-lg p-5">
+        <div class="text-center">
+            <h3 class="mb-4 text-lg font-bold text-gray-900">Your container has been deleted</h3>
+            <p class="mb-4 text-gray-500">Redirect to dashboard</p>
+            <button id="close-modal" class="mt-3 w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Delete Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div class="bg-white p-5 rounded-lg">
+       <h2 class="text-lg font-bold text-center mb-4">Delete this container</h2> <!-- Headline added here -->
+        <p class="text-md text-center mb-4">Please type <br><b>"delete this container"</b><Br> to confirm.</p>
+
+        <div class="flex flex-col items-center mt-4">
+            <div class="mb-2">
+                <input id="deleteInput" type="text" class="border-2 border-gray-300 rounded-lg p-2 mb-4"/>
+            </div>
+            <div>
+                <button id="confirmDelete" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                    Confirm to delete
+                </button>
+                <button id="cancelDelete" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+<div id="ErrorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden" style="z-index:9999">
+    <!-- 모달 컨텐츠 -->
+    <div class="relative p-10 border max-w-3xl w-full shadow-lg rounded-md bg-white" style="z-index: 9999;">
+        <!-- 모달 헤더 -->
+        <div class="text-center">
+            <h3 id="error-fstep-title" class="text-xl leading-6 font-medium text-gray-900 failed">Failed to deploy</h3>
+            <div class="mt-2 px-7 py-3">
+                <p id="error-fstep-subtitle" class="text-sm text-gray-500">Error occurred</p>
+            </div>
+        </div>
+        <!-- 모달 바디: 진행 상황 단계 -->
+        <div class="flex items-center justify-center mt-4 space-x-4 process-part">
+            <textarea id="error-fstep-message" class="text-sm text-gray-500 p-2" style="color:red; height: 100px; overflow-y: scroll; resize: none; width: 100%;" readonly>Error Messages</textarea>
+        </div>
+
+        <div class="mt-10  text-center">
+            <button type="button" id="ErrorConfirmBtn" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-2 py-1 bg-blue-500 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm" style="width: auto; min-width: 100px;">
+                Close
+            </button>
+        </div>
+        <script>
+            document.getElementById('ErrorConfirmBtn').addEventListener('click', function() {
+                document.getElementById('ErrorModal').classList.add('hidden');
+            });
+        </script>
+    </div>
+</div>
+
+
+
+
+</div>
+
+<script>
+    document.getElementById('subscribeButton').addEventListener('click', function() {
+        const containerId = this.dataset.containerId;
+        const isSubscribed = this.dataset.isSubscribed === 'true';
+        const action = isSubscribed ? 'unsubscribe' : 'subscribe';
+
+        fetch('/containers/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ container_id: containerId, action: action })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 구독 상태를 반전시킴
+                    this.dataset.isSubscribed = (!isSubscribed).toString();
+
+                    // 구독 상태에 따라 버튼 텍스트와 아이콘 업데이트
+                    if (!isSubscribed) {
+                        // 구독하기 -> 구독중
+                        this.innerHTML = `<span class="text-white rounded-full px-3 py-1 text-xs font-semibold">✓</span>
+                                      <span id="subscribeText" class="text-white rounded-full px-3 py-1 text-xs font-semibold">Subscribed</span>`;
+                    } else {
+                        // 구독중 -> 구독하기
+                        this.innerHTML = `<span id="subscribeText" class="ml-2">Subscribe</span>
+                                      <span id="subscriberCount" class="text-white rounded-full px-3 py-1 text-xs font-semibold">🔔 ${data.newSubscriberCount}</span>`;
+                    }
+                } else {
+                    console.error('구독 처리 실패');
+                }
+            })
+            .catch(error => console.error('오류:', error));
+    });
+</script>
+
+
+
+<script>
+
+    async function performAction(action, container_id) {
+        // 스피너를 표시
+        document.getElementById('overlay').classList.remove('hidden');
+
+        try {
+            // API 요청 구성
+            const response = await fetch(`/containers/${action}/id=${container_id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json(); // 응답 본문을 JSON으로 변환
+            var action_msg = data.message
+            // 요청 성공 시 로직 (예: 응답을 기반으로 UI 업데이트)
+            if (response.ok) {
+                console.log(`${action} action successful`);
+                alert(data.message)
+
+            } else {
+                document.getElementById('ErrorModal').classList.remove('hidden');
+                document.getElementById('error-fstep-title').innerText = "Failed";
+                document.getElementById('error-fstep-subtitle').innerText = "Error Log"
+                document.getElementById('error-fstep-message').innerText  = action_msg
+                document.getElementById('error-fstep-message').classList.add('failed')
+
+            }
+            document.getElementById('overlay').classList.add('hidden');
+        } catch (error) {
+            document.getElementById('ErrorModal').classList.remove('hidden');
+            document.getElementById('processModal').classList.add('hidden');
+            document.getElementById('error-fstep-title').innerText = "Failed to action";
+            document.getElementById('error-fstep-subtitle').innerText = "Error log"
+            document.getElementById('error-fstep-message').innerText  = action_msg
+            document.getElementById('error-fstep-message').classList.add('failed')
+            //
+        } finally {
+            document.getElementById('overlay').classList.add('hidden');
+
+        }
+    }
+
+</script>
+<script>
+    document.querySelectorAll('.accordion-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-accordion-target');
+            const target = document.querySelector(targetId);
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            target.classList.toggle('hidden');
+            button.setAttribute('aria-expanded', !isExpanded);
+            button.querySelector('svg').classList.toggle('rotate-180', !isExpanded);
+        });
+    });
+</script>
+<script>
+    document.getElementById('deleteBtn').addEventListener('click', function() {
+        document.getElementById('deleteModal').classList.remove('hidden');
+    });
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        var inputVal = document.getElementById('deleteInput').value;
+        if(inputVal === 'delete this container') {
+            var deleteUrl = '/containers/delete/id=<%=container.id%>'; // Replace with your actual URL
+
+            var formData = new FormData();
+            formData.append('data', 'Your data here'); // Add any other data you want to send with the request
+
+            fetch(deleteUrl, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if(response.ok) {
+                    document.getElementById('deleteModal').classList.add('hidden');
+                    document.getElementById('modal').classList.remove('hidden');
+                    document.getElementById('close-modal').addEventListener('click', function() {
+                        window.location.href = "/"; // Redirect to home
+                    });
+                } else {
+                    console.error('Delete failed');
+                }
+            });
+        } else {
+            alert('Please type the correct phrase to confirm.');
+        }
+    });
+    document.getElementById('cancelDelete').addEventListener('click', function() {
+        // Hide the modal
+        document.getElementById('deleteModal').classList.add('hidden');
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Tab toggling logic
+        let tabs = document.querySelectorAll(".tab-item");
+        let tabPanels = document.querySelectorAll("[role='tabpanel']");
+
+        tabs.forEach(tab => {
+            tab.addEventListener("click", function() {
+                tabs.forEach(t => {
+                    t.classList.remove("text-blue-500", "border-blue-500", "border-b-2");
+                    t.classList.add("text-gray-600", "bg-white-100");
+                });
+                tabPanels.forEach(p => p.classList.add("hidden"));
+
+                this.classList.remove("text-gray-600", "bg-white-100");
+                this.classList.add("text-blue-500", "border-blue-500", "border-b-2");
+                document.querySelector(this.dataset.target).classList.remove("hidden");
+
+                // Re-highlight the code block when tab is clicked
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightBlock(block);
+                });
+            });
+        });
+
+        // Initialize Highlight.js on the code blocks
+        document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightBlock(block);
+        });
+
+        // Activate the first tab on page load
+        if (tabs.length > 0) {
+            tabs[0].click();
+        }
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Get the description container element
+        const descriptionContainer = document.getElementById('description-container');
+
+        // Get the Markdown content
+        const markdownContent = descriptionContainer.textContent || descriptionContainer.innerText;
+
+        // Initialize the Showdown converter
+        const converter = new showdown.Converter();
+
+        // Convert the Markdown to HTML and set it as the container's innerHTML
+        descriptionContainer.innerHTML = converter.makeHtml(markdownContent);
+    });
+</script>
+
+</body>
+</html>

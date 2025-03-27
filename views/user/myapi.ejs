@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My API</title>
+    <script src="/stylesheets/tailwind.css"></script>
+</head>
+
+
+<body class="bg-gray-100">
+
+
+<!-- 탑 네비게이션 바 -->
+<%- include('../partial/topnav') %>
+<!-- 왼쪽 네비게이션 메뉴 -->
+<div class="flex">
+    <%- include('../partial/leftmenu') %>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 p-6">
+        <div class="max-w-4xl mx-auto mt-10">
+    <div class="max-w-4xl mx-auto  mt-2">
+        <a href="/" class="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium text-lg transition-colors duration-300 mb-2 " style="cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Go Back
+        </a>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+
+        <div class="px-4 py-5 sm:p-0">
+            <dl class="sm:divide-y sm:divide-gray-200">
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Your API Key</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2">
+                        <input id="tokenField" type="password" readonly class="border-2 border-gray-200 p-2 flex-grow" value="<%= apikey %>">
+
+                        <button onclick="toggleVisibility()" class="bg-white-500 hover:bg-white-700 text-white font-bold rounded focus:outline-none">
+                            <i class="eye icon"></i>👁️
+                        </button>
+                        <button onclick="copyToken()" class="bg-white-500 hover:bg-white-700 text-white font-bold rounded focus:outline-none">
+                            📋
+                        </button>
+                        <p id="copyConfirmation" class="text-green-500 mt-2"></p>
+
+                    </dd>
+                </div>
+
+                <div class="bg-white px-4 py-5">
+                    <dt class="text-sm font-medium text-gray-500 mb-2">Regenerate API Key</dt>
+                    <dd class="mt-1 text-md text-gray-900 col-span-2">
+                        <button id="regenerateBtn" class="bg-red-300 hover:bg-red-500 text-white font-bold py-2 px-4 rounded focus:outline-none">
+                            Regenerate
+                        </button>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+
+
+</div>
+    </main>
+
+
+
+<script>
+    function toggleVisibility() {
+        const tokenField = document.getElementById('tokenField');
+        if (tokenField.type === "password") {
+            tokenField.type = "text";
+        } else {
+            tokenField.type = "password";
+        }
+    }
+
+    function copyToken() {
+        const tokenField = document.getElementById('tokenField');
+        tokenField.select();
+        tokenField.setSelectionRange(0, 99999); /* For mobile devices */
+        document.execCommand("copy");
+
+        const copyConfirmation = document.getElementById('copyConfirmation');
+        copyConfirmation.textContent = "Copied!";
+        setTimeout(() => copyConfirmation.textContent = '', 2000); // 메시지를 2초 후에 지웁니다.
+    }
+
+</script>
+<script>
+    document.getElementById('regenerateBtn').addEventListener('click', function() {
+
+        fetch('/users/myapi/regenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(response => response.json())
+            .then(data => {
+                document.getElementById('tokenField').value = data.apikey;
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+</div>
+</body>
+</html>

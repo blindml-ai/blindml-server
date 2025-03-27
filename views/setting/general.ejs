@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | BlindML</title>
+    <script src="/stylesheets/tailwind.css"></script>
+</head>
+<body class="bg-gray-100">
+
+<!-- 탑 네비게이션 바 -->
+<%- include('../partial/topnav') %>
+
+<!-- 왼쪽 네비게이션 메뉴 -->
+<div class="flex">
+    <%- include('../partial/leftmenu') %>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 p-6">
+        <h1 class="text-2xl font-semibold mb-6 text-gray-800">Settings</h1>
+
+        <!-- Settings 탭 메뉴 -->
+        <div class="bg-white p-4 rounded-lg shadow mb-6">
+            <ul class="flex border-b">
+                <li class="mr-6">
+                    <a href="#env-settings" class="inline-block py-2 px-4 text-blue-500 border-b-2 border-blue-500 font-semibold">Environment</a>
+                </li>
+                <li class="mr-6">
+                    <a href="#db-settings" class="inline-block py-2 px-4 text-blue-500 border-b-2 border-blue-500 font-semibold">Database</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Environment Settings 섹션 -->
+        <section id="env-settings" class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-xl font-semibold mb-4">Environment Variables</h2>
+            <form id="envForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="service-server">Service Server</label>
+                    <input type="text" id="service-server" name="SERVICE_SERVER" value="<%= serviceServer %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="service-port">Service Port</label>
+                    <input type="text" id="service-port" name="SERVICE_PORT" value="<%= servicePort %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="docker-server">Docker Server</label>
+                    <input type="text" id="docker-server" name="DOCKER_SERVER" value="<%= dockerServer %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="docker-port">Docker Port</label>
+                    <input type="text" id="docker-port" name="DOCKER_PORT" value="<%= dockerPort %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-server">Auth Server</label>
+                    <input type="text" id="auth-server" name="AUTH_SERVER" value="<%= authServer %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-port">Auth Port</label>
+                    <input type="text" id="auth-port" name="AUTH_PORT" value="<%= authPort %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Save Changes</button>
+            </form>
+        </section>
+
+        <section id="db-settings" class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-xl font-semibold mb-4">Database Variables</h2>
+            <h4 class="text-sm mb-4">[INFO] Fill in this field if you are using remote MySQL. If you leave it blank, it will use SQLITE3.</h4>
+            <form id="envForm">
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-port">DB Host</label>
+                    <input type="text" id="db-host" name="DB_HOST" value="<%= dbHost %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-port">DB User</label>
+                    <input type="text" id="db-user" name="DB_USER" value="<%= dbUser %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-port">DB Password</label>
+                    <input type="text" id="db-password" name="DB_PASSWORD" value="<%= dbPassword %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="auth-port">DB Name</label>
+                    <input type="text" id="db-name" name="DB_NAME" value="<%= dbName %>" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Save Changes</button>
+            </form>
+        </section>
+    </main>
+</div>
+
+<script>
+    document.getElementById('envForm').addEventListener('submit', async function (e) {
+        e.preventDefault(); // 폼의 기본 제출 동작을 막습니다.
+
+        const formData = new FormData(this);
+        const data = {};
+
+        // FormData 객체를 JSON 객체로 변환
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        try {
+            const response = await fetch('/settings/env', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(result.message); // 성공 메시지 알림
+            } else {
+                alert(`Error: ${result.message}`); // 에러 메시지 알림
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        }
+    });
+</script>
+</body>
+</html>

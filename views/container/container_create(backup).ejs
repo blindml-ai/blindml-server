@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Container</title>
+    <script src="/stylesheets/tailwind.css"></script>
+    <!-- SimpleMDE CSS -->
+    <link rel="stylesheet" href="/stylesheets/simplemde.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/theme/monokai.min.css">
+
+    <style>
+        #codeViewerModal .modal-content .CodeMirror {
+            text-align: left;
+            display: flex;
+            justify-content: flex-start;
+            z-index: 9999; /* z-index 설정 */
+        }
+        .CodeMirror {
+            height: auto;
+            min-height: 100px;
+            width: 100%;
+            z-index: 9999; /* z-index 설정 */
+        }
+
+    </style>
+
+
+
+</head>
+<body class="bg-gray-100 p-5">
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <h1 class="block text-gray-700 text-xl font-bold mb-2">Create New Container</h1>
+    <form id="containerForm" action="/containers/create" method="POST">
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                Container Name
+            </label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" name="name" type="text" placeholder="MyNewFHEProject" required>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="desc">
+                Description
+            </label>
+            <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="desc" name="desc" rows="3" required></textarea>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="resources">
+                Resources
+            </label>
+            <div class="flex mb-4 -mx-2">
+                <div class="w-1/2 px-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="cpu">
+                        CPU (Cores)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="cpu" name="cpu" type="number" min="1" placeholder="1" required>
+                </div>
+                <div class="w-1/2 px-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="ram">
+                        RAM (GB)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="ram" name="ram" type="number" min="1" placeholder="2" required>
+                </div>
+            </div>
+
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" value="" class="sr-only peer" id="toggleGPU">
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" id="gpuStatusLabel">GPU Disabled</span>
+            </label>
+
+        </div>
+
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="securityLevel">
+                Security Level
+            </label>
+            <select class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="securityLevel" name="securityLevel">
+                <% securityLevels.forEach(function(level) { %>
+                    <option value="<%= level.id %>" <%= level.name === 'S1' ? 'selected' : '' %>><%= level.name %> - <span class="text-gray-500"><%= level.desc %></span></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="visibility">
+                Visibility
+            </label>
+            <select class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" id="visibility" name="visibility">
+                <option value="onlyme" selected>Only Me</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+            </select>
+            <p id="visibilityDescription" class="text-sm text-gray-600 mt-1">Only you can see this container.</p>
+        </div>
+
+
+        <div class="mb-4">
+
+            <div class="mb-4 mt-8">
+                <hr class="my-4 border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-gray-700 text-xl font-bold">FHE Settings</h1>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">Skippable</span>
+                </div>
+            </div>
+
+
+            <div class="flex flex-wrap mb-4 mt-10">
+                <div class="flex-grow" style="flex-basis: 60%; margin-right: 1rem;">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="fheLib">Select FHE library</label>
+                    <select name="fheLib" id="fheLib" class="appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                        <option value="concrete-ml">concrete-ml</option>
+                        <option value="pyheaan">pyHEAAN</option>
+                    </select>
+                </div>
+                <div class="flex-grow" style="flex-basis: 35%;"> <!-- 너비 조정 -->
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="fheVersion">Choose the version</label>
+                    <select name="fheVersion" id="fheVersion" class="appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                        <!-- Version options will be dynamically populated -->
+                    </select>
+                </div>
+            </div>
+
+            <p id="frameworkHelpText" class="text-sm text-gray-600 mt-1 mb-10">For concrete-ml, you must upload <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a> and <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">serialized_processing.json</a></p>
+
+     <!-- Existing Drag n Drop area -->
+            <label class="block text-gray-700 text-sm font-bold mb-2 mb-10" for="fileUpload">
+                Upload Model Files
+            </label>
+            <input id="fileUpload" type="file" multiple class="hidden" />
+            <div id="dropArea" class="border-2 border-dashed border-gray-400 rounded-lg text-center py-10 cursor-pointer">
+                Drag and drop files here or click to select files
+            </div>
+            <ul id="fileList" class="list-disc mt-4 pl-5">
+                <!-- Uploaded files will be listed here -->
+            </ul>
+
+
+            <!-- Drag & Drop for requirements.txt -->
+            <div class="mb-4 mt-10">
+                <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="requirementsUpload">Upload requirements.txt</label>
+                <div id="requirementsDropArea" class="border-2 border-dashed border-gray-400 rounded-lg text-center py-10 cursor-pointer">
+                    Drag and drop requirements.txt here or click to select the file
+                </div>
+                <input id="requirementsUpload" type="file" class="hidden" accept=".txt">
+                </div>
+                <textarea id="requirementsEditor" ></textarea> <!-- Textarea for editing requirements.txt -->
+            </div>
+
+
+
+            <!-- Upload Inference Code -->
+            <div class="flex justify-between items-center mb-4 mt-10">
+                <label class="block text-gray-700 text-sm font-bold" for="inferenceCodeUpload">Upload Inference Code</label>
+            </div>
+            <div class="mb-4">
+                <div id="inferenceCodeDropArea" class="border-2 border-dashed border-gray-400 rounded-lg text-center py-10 cursor-pointer">
+                    Drag and drop Python files here or click to select files
+                </div>
+                <input id="inferenceCodeUpload" type="file" class="hidden" accept=".py">
+            </div>
+            <textarea id="codeEditor"></textarea>
+        </div>
+
+
+        <div class="flex items-center justify-between">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                Create Container
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Code Viewer Modal -->
+<div id="codeViewerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-3/4 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Inference Code Viewer</h3>
+            <div class="mt-2">
+                <!--<textarea id="codeEditor"></textarea>-->
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeModal" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- 모달 -->
+<div id="alertModal" class="hidden fixed z-10 inset-0 overflow-y-auto" style="z-index:9999999">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <!-- 모달 컨텐츠 -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <!-- 아이콘 -->
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-headline">
+                            Error
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500" id="alertText">
+                                -
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button id="close-button" type="button" class="close-button mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" id="close-modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.0/mode/python/python.min.js"></script>
+
+<!-- SimpleMDE JS -->
+<script src="/javascripts/simplemde.min.js"></script>
+<script>
+    var simplemde = new SimpleMDE({ element: document.getElementById("desc") });
+    document.getElementById("desc").required = false; // required 속성 제거
+</script>
+
+<script>
+    document.getElementById('visibility').addEventListener('change', function() {
+        var visibilityDescription = document.getElementById('visibilityDescription');
+        switch (this.value) {
+            case 'public':
+                visibilityDescription.textContent = 'Anyone on the internet can see this container.';
+                break;
+            case 'private':
+                visibilityDescription.textContent = 'Only people invited can see this container.';
+                break;
+            case 'onlyme':
+                visibilityDescription.textContent = 'Only you can see this container.';
+                break;
+            default:
+                visibilityDescription.textContent = 'Control who can see this container.';
+                break;
+        }
+    });
+</script>
+<script>
+    document.getElementById('toggleGPU').addEventListener('change', function() {
+        const label = document.getElementById('gpuStatusLabel');
+        if (this.checked) {
+            label.textContent = 'GPU Enabled'; // Update text to "GPU Enabled"
+        } else {
+            label.textContent = 'GPU Disabled'; // Update text to "GPU Disabled"
+        }
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+
+        var codeEditor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: "python",
+            lineNumbers: true
+        });
+        codeEditor.setValue("# Example Python code\nprint('Hello, world!')");
+
+        document.getElementsByClassName('CodeMirror')[1].style.textAlign ="left"
+        document.getElementsByClassName('CodeMirror')[1].style.height ="500px"
+        document.getElementsByClassName('CodeMirror')[1].style.fontSize ="16px"
+
+
+        // Drag & Drop functionality for Inference Code Upload
+        const inferenceCodeDropArea = document.getElementById('inferenceCodeDropArea');
+        const inferenceCodeUpload = document.getElementById('inferenceCodeUpload');
+
+        inferenceCodeDropArea.addEventListener('click', () => inferenceCodeUpload.click());
+
+        inferenceCodeDropArea.addEventListener('dragover', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            inferenceCodeDropArea.classList.add('bg-gray-300');
+        });
+
+        inferenceCodeDropArea.addEventListener('dragleave', (event) => {
+            inferenceCodeDropArea.classList.remove('bg-gray-300');
+        });
+
+        inferenceCodeDropArea.addEventListener('drop', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            inferenceCodeDropArea.classList.remove('bg-gray-300');
+            const files = event.dataTransfer.files;
+            processFileUpload(files[0]); // Only process the first file
+        });
+
+        inferenceCodeUpload.addEventListener('change', () => {
+            processFileUpload(inferenceCodeUpload.files[0]);
+        });
+
+        function processFileUpload(file) {
+            if (file && file.name.endsWith('.py')) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    codeEditor.setValue(e.target.result);
+                    codeEditor.refresh();
+                    // Update the text of the Drop Area to show the file name
+                    inferenceCodeDropArea.textContent = file.name + " has been uploaded.";
+                };
+                reader.readAsText(file); // Start reading the file content
+            } else {
+                alert('Please upload a Python (.py) file.');
+            }
+        }
+
+        //requirements.txt
+        // CodeMirror for editing requirements.txt
+        var requirementsEditor = CodeMirror.fromTextArea(document.getElementById('requirementsEditor'), {
+            mode: "text",
+            lineNumbers: true
+        });
+        document.getElementsByClassName('CodeMirror')[1].style.textAlign = "left"
+        document.getElementsByClassName('CodeMirror')[1].style.height ="500px"
+        document.getElementsByClassName('CodeMirror')[1].style.fontSize = "16px"
+
+        // Drag & Drop for requirements.txt
+        const requirementsDropArea = document.getElementById('requirementsDropArea');
+        const requirementsUpload = document.getElementById('requirementsUpload');
+        requirementsDropArea.addEventListener('click', () => requirementsUpload.click());
+
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            requirementsDropArea.addEventListener(eventName, (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                requirementsDropArea.classList.toggle('bg-gray-300', eventName === 'dragover');
+            });
+        });
+
+        requirementsDropArea.addEventListener('drop', (event) => {
+            let file = event.dataTransfer.files[0]; // Assume single file
+            processRequirementsFileUpload(file);
+        });
+
+        requirementsUpload.addEventListener('change', () => {
+            let file = requirementsUpload.files[0]; // Assume single file
+            processRequirementsFileUpload(file);
+        });
+
+        function processRequirementsFileUpload(file) {
+            if (file && file.type === 'text/plain') {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    requirementsEditor.setValue(e.target.result);
+                };
+                reader.readAsText(file);
+                // Update UI to reflect the uploaded file
+                requirementsDropArea.textContent = file.name + " uploaded";
+            } else {
+                alert("Please upload a valid requirements.txt file.");
+            }
+        }
+
+        //main
+
+        var modal = document.getElementById('alertModal');
+        var span = document.getElementsByClassName("close-button")[0];
+        var alertText = document.getElementById('alertText'); // 경고 텍스트 엘리먼트
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        var form = document.getElementById('containerForm');
+        const dropArea = document.getElementById('dropArea');
+        const fileList = document.getElementById('fileList');
+        const fileInput = document.getElementById('fileUpload');
+
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                if (eventName === 'dragover') {
+                    dropArea.classList.add('bg-gray-300');
+                } else {
+                    dropArea.classList.remove('bg-gray-300');
+                }
+            });
+        });
+
+        dropArea.addEventListener('drop', (event) => {
+            let files = event.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', () => {
+            handleFiles(fileInput.files);
+        });
+
+        function handleFiles(files) {
+            fileList.innerHTML = '';
+            for (const file of files) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${file.name} - ${formatBytes(file.size)}`;
+                fileList.appendChild(listItem);
+            }
+        }
+
+        form.addEventListener('submit', function(e) {
+            event.preventDefault()
+
+            var check_flag = true;
+            const fheLib = document.getElementById('fheLib');
+            const fheVersion = document.getElementById('fheVersion');
+            const name = document.getElementById('name');
+            const cpu = document.getElementById('cpu');
+            const ram = document.getElementById('ram');
+            const toggleGPU = document.getElementById('toggleGPU');
+            const securityLevel = document.getElementById('securityLevel');
+            const visibility = document.getElementById('visibility');
+
+
+            // 필요한 파일이 업로드되었는지 확인
+            if (fheLib.value == 'concrete-ml') {
+                var files = document.getElementById('fileUpload').files;
+                var filenames = Array.from(files).map(file => file.name);
+                var requiredFiles = ['client.zip', 'server.zip'];
+
+                // 필요한 파일이 모두 있는지 확인
+                var allFilesUploaded = requiredFiles.every(file => filenames.includes(file));
+
+
+                if (allFilesUploaded == false) {
+                    // Set the warning text based on the fheLib
+                    alertText.innerHTML = `For concrete-ml,you must upload  <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a> and <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">serialized_processing.json</a>`; // 경고 텍스트를 설정
+                    modal.style.display = "block";
+                    return; // 여기서 함수 종료
+                }
+            }
+
+
+                // 폼 제출 시점에 값을 동적으로 가져옴
+                var formData = new FormData();
+                formData.append('name', name.value);
+                formData.append('desc', simplemde.value()); // 사용자의 최종 입력을 반영
+                formData.append('cpu', cpu.value);
+                formData.append('ram', ram.value);
+                formData.append('gpuEnabled', toggleGPU.checked ? '1' : '0');
+                formData.append('securityLevel', securityLevel.value);
+                formData.append('visibility', visibility.value);
+                formData.append('fheLib', fheLib.value);
+                formData.append('fheVersion', fheVersion.value)
+                formData.append('requirements', requirementsEditor.getValue()); // Get the content from the editor
+                formData.append('inferenceCode', codeEditor.getValue()); // Get the content from the editor
+
+
+                // 파일이 선택되었는지 확인 후 추가
+                if (fileInput.files.length > 0) {
+                    Array.from(fileInput.files).forEach(file => {
+                        formData.append('file', file);
+                    });
+                }
+
+
+
+                    // 폼 데이터와 선택적으로 파일을 서버로 전송
+
+                    fetch('/containers/create', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Container created:', data);
+                            alert('Container created successfully.');
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error creating container.');
+                        });
+
+
+        });
+
+
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+    });
+</script>
+<script>
+    // Script for updating the help text based on FHE framework selection
+    document.getElementById('fheLib').addEventListener('change', function() {
+        var helpText = document.getElementById('frameworkHelpText');
+        if (this.value === 'concrete-ml') {
+            helpText.innerHTML = 'For concrete-ml,you must upload  <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">client.zip</a>, <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">server.zip</a> and <a href="#" class="font-semibold text-gray-900 underline dark:text-white decoration-indigo-500">serialized_processing.json</a>';
+        } else {
+            helpText.innerHTML = ''; // Reset or provide alternative instructions for other selections
+        }
+    });
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var versions = {
+            'concrete-ml': ['latest', '1.4', '1.3', '1.2', '1.1', '1.0'],
+            'pyheaan': ['latest', '1.0']
+        };
+
+        // 초기 버전 옵션 설정
+        function initializeVersionOptions() {
+            var versionSelect = document.getElementById('fheVersion');
+            // concrete-ml 버전 옵션 추가
+            var selectedLibrary = 'concrete-ml'; // 기본으로 선택된 라이브러리
+            var libraryVersions = versions[selectedLibrary];
+
+            libraryVersions.forEach(function(version) {
+                var option = new Option(version, version);
+                versionSelect.add(option);
+                if(version === 'latest') {
+                    option.selected = true; // latest를 기본 선택으로 설정
+                }
+            });
+        }
+
+        // 라이브러리 선택 변경 시 버전 옵션 업데이트
+        document.getElementById('fheLib').addEventListener('change', function() {
+            var versionSelect = document.getElementById('fheVersion');
+            versionSelect.innerHTML = ''; // 기존 옵션 초기화
+
+            var libraryVersions = versions[this.value];
+
+            libraryVersions.forEach(function(version) {
+                var option = new Option(version, version);
+                versionSelect.add(option);
+            });
+        });
+
+        // 페이지 로드 시 버전 옵션 초기화
+        initializeVersionOptions();
+    });
+</script>
+
+
+
+
+
+</body>
+</html>
