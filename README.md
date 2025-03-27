@@ -50,7 +50,7 @@ BlindML Server supports multiple FHE libraries for encrypted inference:
 
 | Library | Description |
 |---------|-------------|
-| [**concrete-ml**](https://github.com/zama-ai/concrete-ml) (by Zama) | Open-source FHE library that converts PyTorch models into FHE-compatible formats. |
+| [**concrete-ml**](https://github.com/zama-ai/concrete-ml) (by Zama) | Open-source FHE library |
 | **CSEM** (soon) | A fast FHE inference engine that supports 100+ machine learning functions, optimized for performance and flexibility.|
 
 > After starting the BlindML server, you can choose the FHE library to use when deploying your model.
