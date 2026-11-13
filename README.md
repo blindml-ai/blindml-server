@@ -68,6 +68,7 @@ Make sure you have the following installed:
 - [Docker](https://www.docker.com/)
 - [Python 3.8](https://www.python.org/)
 - [Node.js ≥ 22.10](https://nodejs.org/)
+- [RabbitMQ](https://www.rabbitmq.com/)
 
 ### Edit your .env file
 
